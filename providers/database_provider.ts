@@ -8,7 +8,8 @@
  */
 
 import type { FieldContext } from '@vinejs/vine/types'
-import type { ApplicationService } from '@adonisjs/core/types'
+import type { ApplicationService, ContainerBindings } from '@adonisjs/core/types'
+import type { Container } from '@adonisjs/core/container'
 
 import { Database } from '../src/database/main.js'
 import { Adapter } from '../src/orm/adapter/index.js'
@@ -47,7 +48,14 @@ declare module '@vinejs/vine' {
      * - The callback must return "true", if the value is unique (does not exist).
      * - The callback must return "false", if the value is not unique (already exists).
      */
-    unique(callback: (db: Database, value: string, field: FieldContext) => Promise<boolean>): this
+    unique(
+      callback: (
+        db: Database,
+        value: string,
+        field: FieldContext,
+        container: Container<ContainerBindings>
+      ) => Promise<boolean>
+    ): this
 
     /**
      * Ensure the value is exists inside the database by self
@@ -56,7 +64,14 @@ declare module '@vinejs/vine' {
      * - The callback must return "false", if the value exists.
      * - The callback must return "true", if the value does not exist.
      */
-    exists(callback: (db: Database, value: string, field: FieldContext) => Promise<boolean>): this
+    exists(
+      callback: (
+        db: Database,
+        value: string,
+        field: FieldContext,
+        container: Container<ContainerBindings>
+      ) => Promise<boolean>
+    ): this
   }
 
   interface VineNumber extends VineLucidBindings {}
@@ -84,10 +99,10 @@ export default class DatabaseServiceProvider {
   /**
    * Registers validation rules for VineJS
    */
-  protected async registerVineJSRules(db: Database) {
+  protected async registerVineJSRules(db: Database, container: Container<ContainerBindings>) {
     if (this.app.usingVineJS) {
       const { defineValidationRules } = await import('../src/bindings/vinejs.js')
-      defineValidationRules(db)
+      defineValidationRules(db, container)
     }
   }
 
@@ -145,7 +160,7 @@ export default class DatabaseServiceProvider {
     await this.prettyPrintDebugQueries(db)
     await this.registerTestUtils()
     await this.registerReplBindings()
-    await this.registerVineJSRules(db)
+    await this.registerVineJSRules(db, this.app.container)
   }
 
   /**

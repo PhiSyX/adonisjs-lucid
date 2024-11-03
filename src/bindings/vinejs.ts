@@ -9,19 +9,21 @@
 
 import vine, { VineNumber, VineString } from '@vinejs/vine'
 import type { Database } from '../database/main.js'
+import type { ContainerBindings } from '@adonisjs/core/types'
+import type { Container } from '@adonisjs/core/container'
 
 /**
  * Defines the "unique" and "exists" validation rules with
  * VineJS.
  */
-export function defineValidationRules(db: Database) {
+export function defineValidationRules(db: Database, container: Container<ContainerBindings>) {
   const uniqueRule = vine.createRule<Parameters<VineString['unique'] | VineNumber['unique']>[0]>(
     async (value, checker, field) => {
       if (!field.isValid) {
         return
       }
 
-      const isUnique = await checker(db, value as string, field)
+      const isUnique = await checker(db, value as string, field, container)
       if (!isUnique) {
         field.report('The {{ field }} has already been taken', 'database.unique', field)
       }
@@ -34,7 +36,7 @@ export function defineValidationRules(db: Database) {
         return
       }
 
-      const exists = await checker(db, value as string, field)
+      const exists = await checker(db, value as string, field, container)
       if (!exists) {
         field.report('The selected {{ field }} is invalid', 'database.exists', field)
       }
